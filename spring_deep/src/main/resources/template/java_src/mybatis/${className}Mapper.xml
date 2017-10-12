@@ -1,0 +1,154 @@
+<#include "/macro.include"/>
+<#assign className = table.className>
+<#assign classNameLower = className?uncap_first>
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="${basepackage}.dao.${className}Repository">
+    <!-- 数据对象映射。 -->
+    <resultMap id="${className}Map" type="${basepackage}.bean.${className}">
+    <#list table.columns as column>
+        <#if column.pk>
+        <id column="${column.sqlName}" property="${column.columnNameLower}" jdbcType="${column.jdbcType}"/>
+        <#else>
+        <result column="${column.sqlName}" property="${column.columnNameLower}" jdbcType="${column.jdbcType}"/>
+        </#if>
+    </#list>
+    </resultMap>
+
+    <!-- 表中所有字段。 -->
+    <sql id="table_all_columns">
+        <#list table.columns as column>${column.sqlName}<#if column_has_next>, </#if></#list>
+    </sql>
+
+    <!-- insert，Id会更新到Bean中，返回结果为新增到记录数。 -->
+    <insert id="insert" parameterType="java.util.Map">
+        <selectKey resultType="java.lang.Long" keyProperty="entity.id" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        INSERT INTO ${table.sqlName} (
+	        <trim suffixOverrides=",">
+	        <#list table.columns as column>
+	       	<#if column.pk>
+	       	<#else>
+	       		<if test="entity.${column.columnNameLower} != null">
+	       			${column.sqlName}<#if column_has_next>, </#if>
+	       		</if>
+	       	</#if>
+	        </#list>
+	        </trim>
+        ) VALUES (
+	        <trim suffixOverrides=",">
+	        <#list table.columns as column>
+	        <#if column.pk>
+	        <#else>
+	        	<if test="entity.${column.columnNameLower} != null">
+	        		<@mybatisEl value="entity.${column.columnNameLower}, jdbcType=${column.jdbcType}" /><#if column_has_next>, </#if>
+	        	</if>
+	        </#if>
+	        </#list>
+	        </trim>
+        )
+    </insert>
+
+    <!-- delete -->
+    <!-- 根据主键删除指定表数据。 -->
+    <delete id="deleteById" parameterType="java.util.Map">
+        DELETE FROM ${table.sqlName} WHERE ${table.idColumn.sqlName} = <@mybatisEl value="${table.idColumn.columnNameLower}, jdbcType=${table.idColumn.jdbcType}" />
+    </delete>
+
+    <!-- update -->
+    <!-- 根据主键更新表数据。 -->
+    <update id="updateById" parameterType="java.util.Map">
+        UPDATE ${table.sqlName}
+        <set>
+        <#list table.columns as column>
+        <#if !column.pk || (column.isDateTimeColumn && !column.contains("update,modify"))>
+            <if test="entity.${column.columnNameLower} != null">${column.sqlName} = <@mybatisEl value="entity.${column.columnNameLower}, jdbcType=${column.jdbcType}" />, </if>
+        </#if>
+        </#list>
+        <#list table.columns as column>
+            <#if column.isDateTimeColumn && column.contains("update,modify")>
+            ${column.sqlName} = NOW(),
+            </#if>
+        </#list>
+        </set>
+        WHERE ${table.idColumn.sqlName} = <@mybatisEl value="entity.${table.idColumn.columnNameLower}, jdbcType=${table.idColumn.jdbcType}" />
+    </update>
+
+    <!-- select -->
+    <!-- 判断要获取的列。 -->
+    <sql id="sql_query_column">
+        <choose>
+            <when test="query.queryStr != null"><@jspEl value="query.queryStr" /></when>
+            <otherwise><include refid="table_all_columns"/></otherwise>
+        </choose>
+    </sql>
+
+    <!-- 共用sql部分，根据Query对象生成查询条件。 -->
+    <sql id="sql_query_condition">
+        <#list table.columns as column>
+        <#if column.isDateTimeColumn && !column.contains("begin,start,end")>
+        <if test="query.${column.columnNameLower}Begin != null"> AND ${column.sqlName} >= <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
+        <if test="query.${column.columnNameLower}End != null"> AND ${column.sqlName} &lt; <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
+        <#elseif column.jdbcType == "DOUBLE" || column.jdbcType == "DECIMAL">
+        <#else>
+        <if test="query.${column.columnNameLower} != null"> AND ${column.sqlName} = <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
+        </#if>
+        </#list>
+    </sql>
+
+    <!-- 判断排序依据。 -->
+    <sql id="sql_order_by">
+        <choose>
+            <when test="query.orderStr != null"> ORDER BY <@jspEl value="query.orderStr" /> </when>
+            <otherwise> ORDER BY ${table.idColumn.columnNameLower} ASC </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 根据主键获取唯一数据。 -->
+    <select id="selectById" resultMap="${className}Map" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM ${table.sqlName} WHERE ${table.idColumn.sqlName} = <@mybatisEl value="${table.idColumn.columnNameLower}, jdbcType=${table.idColumn.jdbcType}" />
+    </select>
+
+    <!-- 根据主键获取唯一数据。 -->
+    <select id="selectById_notry" resultMap="${className}Map" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM ${table.sqlName} WHERE ${table.idColumn.sqlName} = <@mybatisEl value="${table.idColumn.columnNameLower}, jdbcType=${table.idColumn.jdbcType}" /> FOR UPDATE
+    </select>
+
+    <!-- 根据query条件过滤数据，按照主键生序排列获取第一条数据。 -->
+    <select id="selectFirstOne" resultMap="${className}Map" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM ${table.sqlName}
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" /> LIMIT 1
+    </select>
+
+    <!-- 根据query条件获取数据列表。 -->
+    <select id="selectList" resultMap="${className}Map" parameterType="java.util.Map">
+        SELECT <include refid="sql_query_column"/> FROM ${table.sqlName}
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" />
+    </select>
+
+    <!-- 根据query条件获取记录总数。 -->
+    <select id="queryPageCount" resultType="java.lang.Long" parameterType="java.util.Map">
+        SELECT COUNT(*) FROM ${table.sqlName}
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+    </select>
+    <!-- 根据query条件分页获取指定页码的数据。 -->
+    <select id="queryPageList" resultMap="${className}Map" parameterType="java.util.Map">
+        SELECT <include refid="sql_query_column"/> FROM ${table.sqlName}
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" />
+        LIMIT <@jspEl value="query.startIndex" />, <@jspEl value="query.pageSize" />
+    </select>
+
+</mapper>
+
