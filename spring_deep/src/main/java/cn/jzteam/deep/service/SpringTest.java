@@ -66,7 +66,7 @@ public class SpringTest {
             System.out.println("插入entityaaaa");
             
             // 操作数据库
-            entity.setDate("20171013");
+            entity.setTime("20171013");
             System.out.println("准备entity2aaaa");
             mapper.insert(entity);
             System.out.println("执行插入2aaaa");
