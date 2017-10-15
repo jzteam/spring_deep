@@ -1,9 +1,8 @@
 package cn.jzteam.deep.service;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-
-import org.springframework.cglib.proxy.Enhancer;
-import org.springframework.cglib.proxy.InvocationHandler;
+import java.lang.reflect.Proxy;
 
 public class JdkAOPTest implements InvocationHandler{
 	
@@ -14,13 +13,7 @@ public class JdkAOPTest implements InvocationHandler{
 	}
 
 	public Object getProxy(){
-//		Proxy.newProxyInstance(obj.getClass().getClassLoader(), obj.getClass().getInterfaces(), this);
-		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(obj.getClass());
-		enhancer.setCallback(this);
-		
-		
-		return enhancer.create();
+		return Proxy.newProxyInstance(obj.getClass().getClassLoader(), obj.getClass().getInterfaces(), this);
 	}
 
 	@Override
@@ -36,6 +29,7 @@ public class JdkAOPTest implements InvocationHandler{
 	}
 	
 	public static void main(String[] args) {
+		System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
 		JdkAOPTest test = new JdkAOPTest();
 		test.setObj(new Son());
 		Person p = (Person)test.getProxy();
