@@ -12,7 +12,7 @@
     <!-- jsp namespace: web/${namespace}/${className}/list.jsp -->
     <entry key="namespace">pages</entry>
 
-    <entry key="outRoot">/javasoft/generate/generator-output</entry>
+    <entry key="outRoot">/Users/oker/work/workspace0/spring_deep/target</entry>
 
     <!-- 需要移除的表名前缀,使用逗号进行分隔多个前缀,示例值: t_,v_ -->
     <entry key="tableRemovePrefixes"></entry>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.jzteam.deep.dao.TaskRepository">
+    <!-- 数据对象映射。 -->
+    <resultMap id="TaskMap1" type="cn.jzteam.deep.dao.entity.Task">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="task" property="task" jdbcType="VARCHAR"/>
+        <result column="date" property="date" jdbcType="VARCHAR"/>
+        <result column="time" property="time" jdbcType="VARCHAR"/>
+        <result column="modifytime" property="modifytime" jdbcType="TIMESTAMP"/>
+        <result column="deleteflag" property="deleteflag" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <!-- 表中所有字段。 -->
+    <sql id="table_all_columns1">
+        id, user_id, task, date, time, modifytime, deleteflag
+    </sql>
+
+    
+    <select id="testMapper" resultMap="TaskMap1" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns1"/> FROM task
+        <where> 
+        	task like '%${task}%' and id in 
+        	<foreach collection="idList" open="(" separator="," close=")" item = "itemId"> #{itemId}</foreach>
+    	</where>
+    </select>
+
+</mapper>
+

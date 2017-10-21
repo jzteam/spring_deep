@@ -1,16 +1,20 @@
 package cn.jzteam.deep.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.text.html.parser.Entity;
+
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import cn.jzteam.deep.dao.TaskEntityMapper;
-import cn.jzteam.deep.dao.entity.TaskEntity;
+import cn.jzteam.deep.dao.TaskRepository;
+import cn.jzteam.deep.dao.entity.Task;
 import cn.jzteam.deep.util.SpringTransactionUtil;
 
 public class SpringTest {
@@ -21,13 +25,16 @@ public class SpringTest {
     public static void main(String[] args) {
 
         SpringTest spring = new SpringTest();
-        TaskEntityMapper mapper = spring.ioc.getBean(TaskEntityMapper.class);
+        TaskRepository mapper = spring.ioc.getBean(TaskRepository.class);
         spring.create(mapper);
+        
+//        spring.list(mapper);
+//        spring.delete(mapper);
     }
 
     public void test() {
         ClassPathXmlApplicationContext ioc = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TaskEntityMapper mapper = ioc.getBean(TaskEntityMapper.class);
+        TaskRepository mapper = ioc.getBean(TaskRepository.class);
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
@@ -48,28 +55,22 @@ public class SpringTest {
         });
     }
 
-    public void create(TaskEntityMapper mapper) {
-//    	// 默认的TransactionDefinition接口实现：传播required，隔离数据库默认repeated_read。
-//        TransactionDefinition def = new DefaultTransactionDefinition();
-//        // 开启事务
-//        TransactionStatus status = transactionManager.getTransaction(def);
+    public void create(TaskRepository mapper) {
     	
     	SpringTransactionUtil.begin();
+    	Task entity = new Task();
         try {
             // 操作数据库
-            TaskEntity entity = new TaskEntity();
             entity.setTask("first");
             entity.setTime("20171012");
             entity.setUserId(100);
-            System.out.println("准备entityaaaa");
-            mapper.insert(entity);
-            System.out.println("插入entityaaaa");
+            long insert2 = mapper.insert(entity);
+            System.out.println("插入entity111,insert="+insert2+",id="+entity.getId());
             
             // 操作数据库
             entity.setTime("20171013");
-            System.out.println("准备entity2aaaa");
-            mapper.insert(entity);
-            System.out.println("执行插入2aaaa");
+            long insert = mapper.insert(entity);
+            System.out.println("执行插入222,insert="+insert+",id="+entity.getId());
             
 //            insert(mapper);
             
@@ -77,9 +78,9 @@ public class SpringTest {
             
             // 提交事务
             SpringTransactionUtil.commit();
-            System.out.println("更新后commitaaa");
+            System.out.println("更新后commit");
         } catch (Exception e) {
-            System.out.println("异常回滚aaa");
+            System.out.println("异常回滚");
             e.printStackTrace();
             // 回滚事务
             try {
@@ -87,12 +88,14 @@ public class SpringTest {
             } catch (TransactionException e1) {
             }
         }
+        
+        System.out.println("entity.id="+entity.getId());
         return;
     }
     
     
-    public void insert(TaskEntityMapper mapper) {
-//        TransactionDefinition def = new DefaultTransactionDefinition();
+    public void insert(TaskRepository mapper) {
+//      TransactionDefinition def = new DefaultTransactionDefinition();
 //    	DefaultTransactionDefinition def = new DefaultTransactionDefinition();
 //    	def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 //        // 开启事务
@@ -100,7 +103,7 @@ public class SpringTest {
     	SpringTransactionUtil.begin();
         try {
             // 操作数据库
-            TaskEntity entity = new TaskEntity();
+            Task entity = new Task();
             entity.setTask("second");
             entity.setDate("20170912");
             entity.setUserId(100);
@@ -114,7 +117,7 @@ public class SpringTest {
             mapper.insert(entity);
             System.out.println("执行插入2bbbb");
             
-            System.out.println(1/0);
+//            System.out.println(1/0);
             
             // 提交事务
             SpringTransactionUtil.commit();
@@ -131,5 +134,22 @@ public class SpringTest {
         return;
     }
     
+    
+    public void list(TaskRepository mapper){
+    	List<Long> idList = new ArrayList<>();
+    	idList.add(3L);
+    	idList.add(4L);
+    	idList.add(11L);
+    	List<Task> selectByIds = mapper.selectByIds(idList);
+    	selectByIds.forEach(x->{
+    		System.err.println(x.getTask()+"=="+x.getTime());
+    	});
+    	
+    }  
+    
+    public void delete(TaskRepository mapper){
+    	long deleteById = mapper.deleteById(300);
+    	System.out.println("删除："+deleteById);
+    }
 
 }

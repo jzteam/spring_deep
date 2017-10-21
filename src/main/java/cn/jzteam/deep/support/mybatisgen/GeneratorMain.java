@@ -39,5 +39,5 @@ public class GeneratorMain {
         //打开文件夹
         Runtime.getRuntime().exec("open " + GeneratorProperties.getRequiredProperty("outRoot"));
     }
-
+    
 }

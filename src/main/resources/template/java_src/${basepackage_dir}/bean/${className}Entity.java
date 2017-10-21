@@ -1,11 +1,12 @@
 <#include "/macro.include"/>
 <#assign className = table.className>
 <#assign classNameLower = className?uncap_first> 
-package ${basepackage}.bean;
+package ${basepackage}.dao.entity;
 
+import java.math.BigDecimal;
 <#include "/java_imports.include">
 
-public class ${className} implements Serializable{
+public class ${className}Entity implements Serializable{
 
     private static final long serialVersionUID=-1L;
 
@@ -18,7 +19,7 @@ public class ${className} implements Serializable{
 		try{
 			return JSONObject.toJSONString(this);
 		}catch(Exception e){
-			Logs.geterrorLogger().error("${className} toString exception occur.",e);
+			Logs.geterrorLogger().error("${className}Entity toString exception occur.",e);
 		}
 		return null;
 	}

@@ -3,9 +3,9 @@
 <#assign classNameLower = className?uncap_first>
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="${basepackage}.dao.${className}Repository">
+<mapper namespace="${basepackage}.dao.${className}Dao">
     <!-- 数据对象映射。 -->
-    <resultMap id="${className}Map" type="${basepackage}.bean.${className}">
+    <resultMap id="${className}Map" type="${basepackage}.dao.entity.${className}Entity">
     <#list table.columns as column>
         <#if column.pk>
         <id column="${column.sqlName}" property="${column.columnNameLower}" jdbcType="${column.jdbcType}"/>
@@ -88,8 +88,8 @@
     <sql id="sql_query_condition">
         <#list table.columns as column>
         <#if column.isDateTimeColumn && !column.contains("begin,start,end")>
-        <if test="query.${column.columnNameLower}Begin != null"> AND ${column.sqlName} >= <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
-        <if test="query.${column.columnNameLower}End != null"> AND ${column.sqlName} &lt; <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
+        <if test="query.${column.columnNameLower}Begin != null"> AND ${column.sqlName} >= <@mybatisEl value="query.${column.columnNameLower}Begin, jdbcType=${column.jdbcType}" /> </if>
+        <if test="query.${column.columnNameLower}End != null"> AND ${column.sqlName} &lt; <@mybatisEl value="query.${column.columnNameLower}End, jdbcType=${column.jdbcType}" /> </if>
         <#elseif column.jdbcType == "DOUBLE" || column.jdbcType == "DECIMAL">
         <#else>
         <if test="query.${column.columnNameLower} != null"> AND ${column.sqlName} = <@mybatisEl value="query.${column.columnNameLower}, jdbcType=${column.jdbcType}" /> </if>
@@ -148,6 +148,17 @@
         </where>
         <include refid="sql_order_by" />
         LIMIT <@jspEl value="query.startIndex" />, <@jspEl value="query.pageSize" />
+    </select>
+    
+    <!-- update -->
+    <!-- 根据主键更新表数据。 -->
+    <select id="selectByIds" resultMap="${className}Map" parameterType="java.lang.Long">
+        SELECT <include refid="table_all_columns"/> FROM ${table.sqlName}
+        <where> id IN 
+	        <foreach collection="list" open="(" separator="," close=")" item="itemId">
+	    		<@mybatisEl value="itemId" /> 
+	    	</foreach>
+    	</where>
     </select>
 
 </mapper>

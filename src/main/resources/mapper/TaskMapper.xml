@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.jzteam.deep.dao.TaskRepository">
+    <!-- 数据对象映射。 -->
+    <resultMap id="TaskMap" type="cn.jzteam.deep.dao.entity.Task">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="task" property="task" jdbcType="VARCHAR"/>
+        <result column="date" property="date" jdbcType="VARCHAR"/>
+        <result column="time" property="time" jdbcType="VARCHAR"/>
+        <result column="modifytime" property="modifytime" jdbcType="TIMESTAMP"/>
+        <result column="deleteflag" property="deleteflag" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <!-- 表中所有字段。 -->
+    <sql id="table_all_columns">
+        id, user_id, task, date, time, modifytime, deleteflag
+    </sql>
+
+    <!-- insert，Id会更新到Bean中，返回结果为新增到记录数。 -->
+    <insert id="insert" parameterType="java.util.Map" >
+        <selectKey resultType="java.lang.Integer" keyProperty="entity.id" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        INSERT INTO task (
+	        <trim suffixOverrides=",">
+	       		<if test="entity.userId != null">
+	       			user_id, 
+	       		</if>
+	       		<if test="entity.task != null">
+	       			task, 
+	       		</if>
+	       		<if test="entity.date != null">
+	       			date, 
+	       		</if>
+	       		<if test="entity.time != null">
+	       			time, 
+	       		</if>
+	       		<if test="entity.modifytime != null">
+	       			modifytime, 
+	       		</if>
+	       		<if test="entity.deleteflag != null">
+	       			deleteflag
+	       		</if>
+	        </trim>
+        ) VALUES (
+	        <trim suffixOverrides=",">
+	        	<if test="entity.userId != null">
+	        		#{entity.userId, jdbcType=INTEGER}, 
+	        	</if>
+	        	<if test="entity.task != null">
+	        		#{entity.task, jdbcType=VARCHAR}, 
+	        	</if>
+	        	<if test="entity.date != null">
+	        		#{entity.date, jdbcType=VARCHAR}, 
+	        	</if>
+	        	<if test="entity.time != null">
+	        		#{entity.time, jdbcType=VARCHAR}, 
+	        	</if>
+	        	<if test="entity.modifytime != null">
+	        		#{entity.modifytime, jdbcType=TIMESTAMP}, 
+	        	</if>
+	        	<if test="entity.deleteflag != null">
+	        		#{entity.deleteflag, jdbcType=TINYINT}
+	        	</if>
+	        </trim>
+        )
+    </insert>
+
+    <!-- delete -->
+    <!-- 根据主键删除指定表数据。 -->
+    <delete id="deleteById" parameterType="java.util.Map">
+        DELETE FROM task WHERE id = #{id, jdbcType=INTEGER}
+    </delete>
+    
+    <delete id="deleteTest" parameterType="java.util.Map">
+        DELETE FROM task WHERE user_id = #{userId, jdbcType=INTEGER} and deleteflag=#{deleteFlag,jdbcType=TINYINT}
+    </delete>
+
+    <!-- update -->
+    <!-- 根据主键更新表数据。 -->
+    <update id="updateById" parameterType="java.util.Map">
+        UPDATE task
+        <set>
+            <if test="entity.userId != null">user_id = #{entity.userId, jdbcType=INTEGER}, </if>
+            <if test="entity.task != null">task = #{entity.task, jdbcType=VARCHAR}, </if>
+            <if test="entity.date != null">date = #{entity.date, jdbcType=VARCHAR}, </if>
+            <if test="entity.time != null">time = #{entity.time, jdbcType=VARCHAR}, </if>
+            <if test="entity.modifytime != null">modifytime = #{entity.modifytime, jdbcType=TIMESTAMP}, </if>
+            <if test="entity.deleteflag != null">deleteflag = #{entity.deleteflag, jdbcType=TINYINT}, </if>
+            modifytime = NOW(),
+        </set>
+        WHERE id = #{entity.id, jdbcType=INTEGER}
+    </update>
+
+    <!-- select -->
+    <!-- 判断要获取的列。 -->
+    <sql id="sql_query_column">
+        <choose>
+            <when test="query.queryStr != null">${query.queryStr}</when>
+            <otherwise><include refid="table_all_columns"/></otherwise>
+        </choose>
+    </sql>
+
+    <!-- 共用sql部分，根据Query对象生成查询条件。 -->
+    <sql id="sql_query_condition">
+        <if test="query.id != null"> AND id = #{query.id, jdbcType=INTEGER} </if>
+        <if test="query.userId != null"> AND user_id = #{query.userId, jdbcType=INTEGER} </if>
+        <if test="query.task != null"> AND task = #{query.task, jdbcType=VARCHAR} </if>
+        <if test="query.date != null"> AND date = #{query.date, jdbcType=VARCHAR} </if>
+        <if test="query.time != null"> AND time = #{query.time, jdbcType=VARCHAR} </if>
+        <if test="query.modifytimeBegin != null"> AND modifytime >= #{query.modifytimeBegin, jdbcType=TIMESTAMP} </if>
+        <if test="query.modifytimeEnd != null"> AND modifytime &lt; #{query.modifytimeEnd, jdbcType=TIMESTAMP} </if>
+        <if test="query.deleteflag != null"> AND deleteflag = #{query.deleteflag, jdbcType=TINYINT} </if>
+    </sql>
+
+    <!-- 判断排序依据。 -->
+    <sql id="sql_order_by">
+        <choose>
+            <when test="query.orderStr != null"> ORDER BY ${query.orderStr} </when>
+            <otherwise> ORDER BY id ASC </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 根据主键获取唯一数据。 -->
+    <select id="selectById" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM task WHERE id = #{id, jdbcType=INTEGER}
+    </select>
+
+    <!-- 根据主键获取唯一数据。 -->
+    <select id="selectById_notry" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM task WHERE id = #{id, jdbcType=INTEGER} FOR UPDATE
+    </select>
+
+    <!-- 根据query条件过滤数据，按照主键生序排列获取第一条数据。 -->
+    <select id="selectFirstOne" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM task
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" /> LIMIT 1
+    </select>
+
+    <!-- 根据query条件获取数据列表。 -->
+    <select id="selectList" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="sql_query_column"/> FROM task
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" />
+    </select>
+
+    <!-- 根据query条件获取记录总数。 -->
+    <select id="queryPageCount" resultType="java.lang.Long" parameterType="java.util.Map">
+        SELECT COUNT(*) FROM task
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+    </select>
+    <!-- 根据query条件分页获取指定页码的数据。 -->
+    <select id="queryPageList" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="sql_query_column"/> FROM task
+        <where>
+            <include refid="sql_query_condition"/>
+        </where>
+        <include refid="sql_order_by" />
+        LIMIT ${query.startIndex}, ${query.pageSize}
+    </select>
+    
+    <!-- update -->
+    <!-- 根据主键更新表数据。 -->
+    <select id="selectByIds" resultMap="TaskMap" parameterType="java.lang.Long">
+        SELECT <include refid="table_all_columns"/> FROM task
+        <where> id IN 
+	        <foreach collection="list" open="(" separator="," close=")" item="itemId">
+				#{itemId}	    	
+			</foreach>
+    	</where>
+    </select>
+    
+    <select id="selectTest" resultMap="TaskMap" parameterType="java.util.Map">
+        SELECT <include refid="table_all_columns"/> FROM task
+        <where> 
+        	task like '%${task}%' and id in 
+        	<foreach collection="idList" open="(" separator="," close=")" item = "itemId"> #{itemId}</foreach>
+    	</where>
+    </select>
+
+</mapper>
+
